@@ -25,9 +25,9 @@ def generate_ssh_key():
     copy_to_clipboard()
 
 
-def copy_to_clipboard():
+def copy_to_clipboard(ssh_pub="id_ed25519.pub"):
     install_xclip = "sudo apt-get update; sudo apt-get install xclip"
-    copy_to_clipboard = "cat ~/.ssh/id_ed25519.pub | clip.exe"
+    copy_to_clipboard = f"cat ~/.ssh/{ssh_pub}| clip.exe"
     cmds = [install_xclip, copy_to_clipboard]
 
     print("Great, let's copy the ssh key to the clipboard.")
@@ -55,24 +55,23 @@ def add_key_to_vcs():
 
 
 def main():
-    print("=== SET UP SSH KEYS ===")
-    print("Note: This script is currently lame and assumes the use of default ssh key name id_ed25519.")
-    print("Also, there's no email input checking to prevent evil source injection, lol.")
-    print("See https://semgrep.dev/docs/cheat-sheets/python-command-injection for solution.")
-    print("I'm not distributing this, so it doesn't matter, but just saying.")
-    print()
+    print("=== SET UP SSH KEYS ===\n")
     
+    # Make ~/.ssh if it doesn't already exist
     ssh_path = os.path.join(os.environ["HOME"], ".ssh")
     os.makedirs(ssh_path, exist_ok=True)
 
-    # First, check if ssh keys already exist
     for (dirpath, dirnames, filenames) in os.walk(os.path.join(os.environ["HOME"], ".ssh")):
         print("Found existing files in ~/.ssh: ")
-        print("-->", ' '.join(filenames))
+        fnames = [file for file in filenames if file.endswith(".pub")]
+        print("-->", ' '.join(fnames))
         answer = input("Use existing ssh key? (y/n): ")
 
         if answer == 'y':
-            copy_to_clipboard()
+            ssh_pub = input("Enter name of ssh key to copy (default=id_ed25519.pub): ")
+            if ssh_pub == "":
+                ssh_pub = "id_ed25519.pub"
+            copy_to_clipboard(ssh_pub)
             return
         elif answer == 'n':
             print("\nOkay, generating ssh key...")
