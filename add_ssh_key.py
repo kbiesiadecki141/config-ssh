@@ -1,17 +1,20 @@
 # Quick script to set up ssh keys on new machine
+# !!! Only tested on WSL2 environment in bash shell !!!
+#
 
 import subprocess
 import os
 
-# todo: generalize command entry so it's not 
-# repeated for generate_ssh_key and copy_to_clipboard
-def generate_ssh_key():
-    email = input("Enter email: ")
-    keygen_cmd = f"ssh-keygen -t ed25519 -C \"{email}\""
-    start_ssh_agent = "eval \"$(ssh-agent -s)\""
 
-    cmds = [keygen_cmd, start_ssh_agent]
-
+def run_script_with_input(script: str, separator: str ="\n"): 
+    ''' Iterates through each line of shell script and
+    allow user to decide whether or not to execute it.
+    
+    Args:
+        script (str): Code to execute through shell
+    '''
+    cmds = [cmd for cmd in script.split(separator) if cmd != ""]
+    
     for cmd in cmds:
         answer = input(f"Okay, next command: \n $ {cmd} \nExecute command? (y/n): ")
 
@@ -22,32 +25,37 @@ def generate_ssh_key():
 
         print()
 
+
+def generate_ssh_key():
+    email = input("Enter email: ")
+    script = \
+f"""
+ssh-keygen -t ed25519 -C \"{email}\"
+eval \"$(ssh-agent -s)\"
+"""
+
+    run_script_with_input(script) 
+    print("-----------------------------------------")
     copy_to_clipboard()
 
 
 def copy_to_clipboard(ssh_pub="id_ed25519.pub"):
-    install_xclip = "sudo apt-get update; sudo apt-get install xclip"
-    copy_to_clipboard = f"cat ~/.ssh/{ssh_pub}| clip.exe"
-    cmds = [install_xclip, copy_to_clipboard]
 
     print("Great, let's copy the ssh key to the clipboard.")
 
-    for cmd in cmds:
-        answer = input(f"Okay, next command: \n $ {cmd} \nExecute command? (y/n): ")
-
-        if answer == 'y':
-            ret_val = subprocess.call(cmd, shell=True)
-
-            if cmd == copy_to_clipboard:
-                print("\nGreat, now we can add the SSH key that has been copied to your clipboard to the VCS of your choice.")
-                add_key_to_vcs()
-        else:
-            print("Skipping command.")
-
-        print()
+    script = \
+f"""
+sudo apt-get update; sudo apt-get install clip
+cat ~/.ssh/{ssh_pub} | clip.exe
+"""
+    run_script_with_input(script)
+    print("-----------------------------------------")
+    add_key_to_vcs()
 
 
 def add_key_to_vcs():
+    print("Great, now we can add the SSH key that has been copied to your clipboard to the VCS of your choice.")
+
     # todo: GitHub has a CLI for adding ssh key, might be nice to add
     print("\nHere are some quick links to add your ssh key: ")
     print("--> GitHub: https://github.com/settings/keys")
